@@ -9,44 +9,34 @@ class Mundo:
         self.mapa = self._generar_terreno()
 
     def _generar_terreno(self):
-        """Genera un terreno básico con Perlin Noise optimizado"""
         mapa = [[0 for _ in range(ct.COLUMNAS)] for _ in range(ct.FILAS)]
         noise = PerlinNoise(octaves=3, seed=self.seed)
         altura_media = ct.FILAS // 2
         
         for col in range(ct.COLUMNAS):
-            # Altura con variación suave
             altura = altura_media + int(noise(col/15) * 10)
             
             for fila in range(ct.FILAS):
                 if fila > altura:
                     if fila == altura + 1:
-                        mapa[fila][col] = 3  # Pasto en superficie
+                        mapa[fila][col] = 3
                     elif fila <= altura + 4:
-                        mapa[fila][col] = 1  # Capa de tierra
+                        mapa[fila][col] = 1
                     else:
-                        mapa[fila][col] = 2  # Piedra bajo tierra
+                        mapa[fila][col] = 2
         return mapa
 
     def dibujar(self, pantalla):
-        """Renderizado optimizado con pre-cálculo de rectángulos"""
         for fila in range(ct.FILAS):
             for col in range(ct.COLUMNAS):
-                bloque = self.mapa[fila][col]
-                if bloque != 0:  # No dibujar aire
-                    rect = pygame.Rect(
-                        col * ct.TILE_SIZE,
-                        fila * ct.TILE_SIZE,
-                        ct.TILE_SIZE,
-                        ct.TILE_SIZE
+                if (bloque := self.mapa[fila][col]) != 0:
+                    pygame.draw.rect(
+                        pantalla, 
+                        ct.COLORES[bloque], 
+                        (col * ct.TILE_SIZE, fila * ct.TILE_SIZE, ct.TILE_SIZE, ct.TILE_SIZE)
                     )
-                    pygame.draw.rect(pantalla, ct.COLORES[bloque], rect)
 
     def colisiona(self, x, y):
-        """Detección de colisiones optimizada"""
-        col = int(x // ct.TILE_SIZE)
-        fila = int(y // ct.TILE_SIZE)
-         # Verificar límites del mundo primero
-        if not (0 <= col < ct.COLUMNAS and 0 <= fila < ct.FILAS):
-            return False  # o True si quieres que los bordes sean sólidos
-        return self.mapa[fila][col] in ct.BLOQUES_SOLIDOS
+        col, fila = int(x // ct.TILE_SIZE), int(y // ct.TILE_SIZE)
+        return (0 <= col < ct.COLUMNAS and 0 <= fila < ct.FILAS and 
+                self.mapa[fila][col] in ct.BLOQUES_SOLIDOS)

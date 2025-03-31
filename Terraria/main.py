@@ -21,7 +21,7 @@ def dibujar_item_actual():
     # Dibujar fondo del indicador
     pygame.draw.rect(pantalla, (50, 50, 50), (5, 35, 80, 40))
     
-    # Dibujar icono
+    # Dibujar icono y texto según el tipo de item
     if item["tipo"] == "bloque":
         pygame.draw.rect(pantalla, item["datos"]["color"], (10, 40, 30, 30))
         texto = font.render(f"x{item['datos']['cantidad']}", True, (255, 255, 255))

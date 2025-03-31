@@ -3,21 +3,20 @@ import constantes as ct
 
 class Inventario:
     def __init__(self):
-        # Inicialización con valores por defecto seguros
         self.bloques = {
-            1: {"nombre": "Tierra", "cantidad": 5, "color": ct.COLORES[1], "rect": None, "categoria": "Bloques"},
-            2: {"nombre": "Piedra", "cantidad": 5, "color": ct.COLORES[2], "rect": None, "categoria": "Bloques"}, 
-            3: {"nombre": "Pasto", "cantidad": 5, "color": ct.COLORES[3], "rect": None, "categoria": "Bloques"}
+            1: {"nombre": "Tierra", "cantidad": 5, "color": ct.COLORES[1]},
+            2: {"nombre": "Piedra", "cantidad": 5, "color": ct.COLORES[2]}, 
+            3: {"nombre": "Pasto", "cantidad": 5, "color": ct.COLORES[3]}
         }
         
         self.herramientas = {
-            "mano": {"durabilidad": float('inf'), "rect": None, "categoria": "Herramientas"},
-            "pico": {"durabilidad": 100, "rect": None, "categoria": "Herramientas"},
-            "pala": {"durabilidad": 100, "rect": None, "categoria": "Herramientas"}
+            "mano": {"durabilidad": float('inf')},
+            "pico": {"durabilidad": 100},
+            "pala": {"durabilidad": 100}
         }
         
         self.categoria_actual = "Bloques"
-        self.item_seleccionado = 1  # Empieza con Tierra seleccionada
+        self.item_seleccionado = 1
         self.visible = False
         self.posicion = (ct.ANCHO - 220, 50)
         self.ancho = 200
@@ -36,24 +35,21 @@ class Inventario:
         return False
 
     def obtener_item_actual(self):
-        """Versión robusta que previene todos los errores"""
-        try:
-            if self.categoria_actual == "Bloques":
-                if self.item_seleccionado in self.bloques:
-                    return {
-                        "tipo": "bloque",
-                        "id": self.item_seleccionado,
-                        "datos": self.bloques[self.item_seleccionado]
-                    }
-            else:
-                if isinstance(self.item_seleccionado, str) and self.item_seleccionado in self.herramientas:
-                    return {
-                        "tipo": "herramienta",
-                        "nombre": self.item_seleccionado,
-                        "datos": self.herramientas[self.item_seleccionado]
-                    }
-        except:
-            pass
+        if self.categoria_actual == "Bloques":
+            if self.item_seleccionado in self.bloques:
+                return {
+                    "tipo": "bloque",
+                    "id": self.item_seleccionado,
+                    "nombre": self.bloques[self.item_seleccionado]["nombre"],
+                    "datos": self.bloques[self.item_seleccionado]
+                }
+        else:
+            if isinstance(self.item_seleccionado, str) and self.item_seleccionado in self.herramientas:
+                return {
+                    "tipo": "herramienta",
+                    "nombre": self.item_seleccionado,
+                    "datos": self.herramientas[self.item_seleccionado]
+                }
         
         # Fallback seguro
         return {
@@ -66,46 +62,47 @@ class Inventario:
         item = self.obtener_item_actual()
         return item["nombre"] if item["tipo"] == "herramienta" else "mano"
 
-    # ... (resto de métodos permanecen igual)
-
-
     def tiene_bloques(self, tipo_bloque, cantidad=1):
-        """Verifica si hay suficientes bloques"""
         return tipo_bloque in self.bloques and self.bloques[tipo_bloque]["cantidad"] >= cantidad
 
-    def obtener_items_activos(self):
-        """Devuelve los items de la categoría actual"""
+    def _obtener_items_activos(self):
+        """Devuelve los items de la categoría actual en formato uniforme"""
         items = []
         if self.categoria_actual == "Bloques":
             for bloque_id, datos in self.bloques.items():
-                item = datos.copy()
-                item["id"] = bloque_id
+                item = {
+                    "tipo": "bloque",
+                    "id": bloque_id,
+                    "nombre": datos["nombre"],
+                    "color": datos["color"],
+                    "cantidad": datos["cantidad"]
+                }
                 items.append(item)
         else:
             for herramienta_nombre, datos in self.herramientas.items():
-                item = datos.copy()
-                item["nombre"] = herramienta_nombre
+                item = {
+                    "tipo": "herramienta",
+                    "nombre": herramienta_nombre,
+                    "durabilidad": datos["durabilidad"]
+                }
                 items.append(item)
         return items
 
-
     def usar_herramienta(self):
-        """Reduce la durabilidad de la herramienta actual"""
         item = self.obtener_item_actual()
         if item["tipo"] == "herramienta" and item["datos"]["durabilidad"] != float('inf'):
             self.herramientas[item["nombre"]]["durabilidad"] -= 1
             if self.herramientas[item["nombre"]]["durabilidad"] <= 0:
                 self.herramientas[item["nombre"]]["durabilidad"] = 0
-                self.item_seleccionado = 1  # Volver a bloque tierra
+                self.item_seleccionado = 1
                 self.categoria_actual = "Bloques"
 
     def dibujar(self, pantalla, font):
-        """Dibuja el inventario en pantalla"""
         if not self.visible:
             return
             
         # Calcular altura total
-        items_activos = self.obtener_items_activos()
+        items_activos = self._obtener_items_activos()
         altura_total = len(items_activos) * (self.alto_item + self.margen) + self.alto_categoria + 20
         
         # Fondo del inventario
@@ -115,17 +112,15 @@ class Inventario:
         pantalla.blit(fondo, self.posicion)
         
         # Dibujar selector de categorías
-        self.dibujar_categorias(pantalla, font)
+        self._dibujar_categorias(pantalla, font)
         
         # Dibujar items
         y_pos = self.posicion[1] + self.alto_categoria + 10
         for item in items_activos:
-            self.dibujar_item(pantalla, font, item, y_pos)
-            item["rect"] = pygame.Rect(self.posicion[0], y_pos, self.ancho, self.alto_item)
+            self._dibujar_item(pantalla, font, item, y_pos)
             y_pos += self.alto_item + self.margen
 
-    def dibujar_categorias(self, pantalla, font):
-        """Dibuja las pestañas de categorías"""
+    def _dibujar_categorias(self, pantalla, font):
         x_pos = self.posicion[0]
         ancho_cat = self.ancho // len(ct.CATEGORIAS)
         
@@ -139,7 +134,7 @@ class Inventario:
                                               self.posicion[1] + self.alto_categoria//2))
             pantalla.blit(texto, texto_rect)
 
-    def dibujar_item(self, pantalla, font, item, y_pos):
+    def _dibujar_item(self, pantalla, font, item, y_pos):
         """Dibuja un item individual del inventario"""
         # Resaltar item seleccionado
         seleccionado = False
@@ -168,69 +163,46 @@ class Inventario:
         pantalla.blit(texto, (self.posicion[0] + 40, y_pos + 10))
 
     def manejar_evento(self, evento):
-        """Maneja todos los eventos del inventario con validaciones completas"""
-        # Alternar visibilidad con tecla E
         if evento.type == pygame.KEYDOWN and evento.key == pygame.K_e:
             self.visible = not self.visible
             return
-
-        # Solo procesar otros eventos si el inventario está visible
-        if not self.visible:
+            
+        if not self.visible or evento.type != pygame.MOUSEBUTTONDOWN or evento.button != 1:
             return
-
-        if evento.type == pygame.MOUSEBUTTONDOWN and evento.button == 1:  # Clic izquierdo
-            mouse_x, mouse_y = evento.pos
-
-            # Primero verificar si se hizo clic en las categorías
-            x_pos = self.posicion[0]
-            ancho_cat = self.ancho // len(ct.CATEGORIAS)
+            
+        mouse_x, mouse_y = evento.pos
         
-            for i, categoria in enumerate(ct.CATEGORIAS):
-                rect_categoria = pygame.Rect(
-                    x_pos + i * ancho_cat,
-                    self.posicion[1],
-                    ancho_cat,
-                    self.alto_categoria
-                )
-            
-                if rect_categoria.collidepoint(mouse_x, mouse_y):
-                    self.categoria_actual = categoria
-                    # Resetear selección al cambiar de categoría
-                    if categoria == "Bloques":
-                        self.item_seleccionado = 1  # Seleccionar Tierra por defecto
-                    else:
-                        self.item_seleccionado = "pico"  # Seleccionar Pico por defecto
-                    return
-
-            # Verificar clic en items
-            items_activos = []
-            if self.categoria_actual == "Bloques":
-                items_activos = [
-                    {**data, "id": id_, "tipo": "bloque"} 
-                    for id_, data in self.bloques.items()
-                ]
-            else:
-                items_activos = [
-                    {**data, "nombre": nombre, "tipo": "herramienta"} 
-                    for nombre, data in self.herramientas.items()
-                ]
-
-            y_pos = self.posicion[1] + self.alto_categoria + 10
-            for item in items_activos:
-                item_rect = pygame.Rect(
-                    self.posicion[0],
-                    y_pos,
-                    self.ancho,
-                    self.alto_item
-                )
-            
-                if item_rect.collidepoint(mouse_x, mouse_y):
-                    if self.categoria_actual == "Bloques":
-                        if item["id"] in self.bloques:  # Validación extra
-                            self.item_seleccionado = item["id"]
-                    else:
-                        if item["nombre"] in self.herramientas:  # Validación extra
-                            self.item_seleccionado = item["nombre"]
-                    break
-                
-                y_pos += self.alto_item + self.margen
+        # Verificar clic en categorías
+        x_pos = self.posicion[0]
+        ancho_cat = self.ancho // len(ct.CATEGORIAS)
+        
+        for i, categoria in enumerate(ct.CATEGORIAS):
+            rect = pygame.Rect(
+                x_pos + i * ancho_cat,
+                self.posicion[1],
+                ancho_cat,
+                self.alto_categoria
+            )
+            if rect.collidepoint(mouse_x, mouse_y):
+                self.categoria_actual = categoria
+                self.item_seleccionado = 1 if categoria == "Bloques" else "pico"
+                return
+        
+        # Verificar clic en items
+        items_activos = self._obtener_items_activos()
+        y_pos = self.posicion[1] + self.alto_categoria + 10
+        
+        for item in items_activos:
+            rect = pygame.Rect(
+                self.posicion[0],
+                y_pos,
+                self.ancho,
+                self.alto_item
+            )
+            if rect.collidepoint(mouse_x, mouse_y):
+                if self.categoria_actual == "Bloques":
+                    self.item_seleccionado = item["id"]
+                else:
+                    self.item_seleccionado = item["nombre"]
+                return
+            y_pos += self.alto_item + self.margen

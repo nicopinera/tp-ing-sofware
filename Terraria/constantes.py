@@ -22,7 +22,7 @@ COLORES = {
 # Tipos de bloques sólidos
 BLOQUES_SOLIDOS = {1, 2, 3}  # Tierra, Piedra, Pasto
 
-# Asegurar que todas las herramientas están definidas
+# Herramientas
 HERRAMIENTAS = {
     "mano": {"color": (200, 200, 200), "durabilidad": float('inf'), "bloques_efectivos": []},
     "pico": {"color": (139, 69, 19), "durabilidad": 100, "bloques_efectivos": [2, 4, 5]},
